@@ -38,7 +38,7 @@ public class JSONWiFiData extends JSONObject{
             obj.put(X_COORD_TAG, x_coord);
             obj.put(Y_COORD_TAG, y_coord);
 
-            JSONArray array= new JSONArray(measurements.size());
+            JSONArray array= new JSONArray();
             for(WiFiElement w: measurements){
                 JSONObject measurement=new JSONObject();
                 measurement.put(MAC_TAG,w.getAddressMAC());

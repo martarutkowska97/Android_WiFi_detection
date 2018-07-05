@@ -19,6 +19,7 @@ import android.os.Bundle;
 import android.support.v7.view.WindowCallbackWrapper;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -33,6 +34,8 @@ import org.json.JSONObject;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.sql.SQLOutput;
 import java.util.ArrayList;
@@ -42,17 +45,17 @@ import java.util.List;
 public class MainActivity extends Activity {
 
     RecyclerView recyclerView;
-    ArrayList<WiFiElement> content;
+    static ArrayList<WiFiElement> content;
     RVAdapter adapter;
 
     WifiManager wifiManager;
-    //WifiScanReceiver wifiScanReceiver;
+    WifiScanReceiver wifiScanReceiver;
     Button scan;
 
-
-
     public static final int NUMBER_OF_SCANS = 3;
-    public static final int SCANNING_TIME = 1000;
+    public static final int SCANNING_TIME = 3000;
+
+    ArrayList<JSONObject> dataCollection;
 
 
 
@@ -64,107 +67,130 @@ public class MainActivity extends Activity {
         if(!(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED &&
                 ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) &&
                 ContextCompat.checkSelfPermission(this, Manifest.permission.CHANGE_WIFI_STATE) == PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_WIFI_STATE) == PackageManager.PERMISSION_GRANTED)
+                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_WIFI_STATE) == PackageManager.PERMISSION_GRANTED &&
+        ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+        ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
         {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                    Manifest.permission.ACCESS_WIFI_STATE, Manifest.permission.CHANGE_WIFI_STATE},
+                    Manifest.permission.ACCESS_WIFI_STATE, Manifest.permission.CHANGE_WIFI_STATE, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
                     0);
         }
 
 
         recyclerView = findViewById(R.id.recycler_view);
         content=new ArrayList<>();
+        dataCollection=new ArrayList<>();
+
         adapter = new RVAdapter();
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-                wifiManager= (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-
-       // wifiScanReceiver = new WifiScanReceiver();
-
-        //registerReceiver(wifiScanReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+        wifiManager= (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        wifiScanReceiver = new WifiScanReceiver();
+        registerReceiver(wifiScanReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
 
         scan= findViewById(R.id.button_scan);
         scan.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
 
-                for(int i=0; i<NUMBER_OF_SCANS;i++){
-                    long startTime = System.currentTimeMillis();
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        int count = 0;
+                        while (count < NUMBER_OF_SCANS) {
+                            try {
+                                wifiManager.startScan();
+                                synchronized (MainActivity.this) {
+                                    MainActivity.this.wait();
+                                    count++;
+                                }
+                                final int c = count;
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Toast.makeText(getApplicationContext(), "SAVED "+c, Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+                                if(count < NUMBER_OF_SCANS)
+                                    Thread.sleep(2000);
+                            } catch (InterruptedException e) {
+                            }
 
-                    //TODO: DOPRACOWAĆ CO JAKI CZAS
-//                    while((System.currentTimeMillis()-startTime)<SCANNING_TIME){
-//
-//                    }
-                    Toast.makeText(getApplicationContext(),"SAVED "+(i+1), Toast.LENGTH_SHORT).show();
-                    returnAllWifis();
-
-
-                    JSONWiFiData jsonWiFiData=new JSONWiFiData(2,3,content);
-                    JSONObject jsonObject=jsonWiFiData.makeJSONObject();
-                    try {
-
-                        File root = new File(Environment.getExternalStorageDirectory(), ".json");
-                        if(!root.exists()) {
-                            root.mkdirs();
                         }
-
-                        File jsonFile = new File(root, "JSON_DATA");
-                        FileWriter writer = new FileWriter(jsonFile);
-
-                        writer.append(jsonObject.toString());
-                        writer.flush();
-                        writer.close();
-                        Toast.makeText(getApplicationContext(), "Composition saved", Toast.LENGTH_LONG).show();
-
-                    } catch (Exception e) {
-                        Toast.makeText(getBaseContext(), e.getMessage(), Toast.LENGTH_LONG).show();
                     }
-                }
+                }).start();
+
             }
         });
 
-        wifiManager.startScan();
+
+    }
+
+    private void saveToJSONFile(){
+        JSONWiFiData jsonWiFiData=new JSONWiFiData(-1,-1,content);
+        JSONObject jsonObject=jsonWiFiData.makeJSONObject();
+
+
+        try (FileWriter file = new FileWriter("/storage/emulated/0/JSON/plik.json")) {
+            file.write(jsonObject.toString());
+            file.flush();
+
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try (FileWriter file = new FileWriter("/storage/emulated/0/JSON/plik2.txt")) {
+            file.write(jsonObject.toString());
+            file.flush();
+
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
     private void returnAllWifis(){
         content.clear();
+        System.out.println("RETURN ALL WIFIS");
         List<ScanResult> scanResults = wifiManager.getScanResults();
 
         for(ScanResult s: scanResults){
             content.add(new WiFiElement(Integer.toString(s.level), s.BSSID));
-            adapter.notifyDataSetChanged();
+            System.out.println(s.BSSID);
         }
+        adapter.notifyDataSetChanged();
     }
 
     @Override
     protected void onPause() {
-        //unregisterReceiver(wifiScanReceiver);
+        unregisterReceiver(wifiScanReceiver);
         super.onPause();
     }
 
     @Override
     protected void onResume() {
-        //registerReceiver(wifiScanReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+        registerReceiver(wifiScanReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
         super.onResume();
     }
 
-//    class WifiScanReceiver extends BroadcastReceiver{
-//
-//        @Override
-//        public void onReceive(Context c, Intent intent) {
-//            if (intent.getAction().equals(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)) {
-//                content.clear();
-//                List<ScanResult> scanResults = wifiManager.getScanResults();
-//
-//                Toast.makeText(getApplicationContext(),"SCANNING", Toast.LENGTH_SHORT).show();
-//
-//                for(ScanResult s: scanResults){
-//                    content.add(new WiFiElement(Integer.toString(s.level), s.BSSID));
-//                    adapter.notifyDataSetChanged();
-//                }
-//            }
-//        }
-//    }
+    class WifiScanReceiver extends BroadcastReceiver{
+
+        @Override
+        public void onReceive(Context c, Intent intent) {
+            if (intent.getAction().equals(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)) {
+                returnAllWifis();
+                JSONWiFiData jsonWiFiData=new JSONWiFiData(-1,-1,content);
+                JSONObject jsonObject=jsonWiFiData.makeJSONObject();
+                dataCollection.add(jsonObject);
+                saveToJSONFile();
+                synchronized (MainActivity.this) {
+                    MainActivity.this.notifyAll();
+                }
+            }
+        }
+    }
 
 
     class RVAdapter extends RecyclerView.Adapter<MainActivity.ViewHolder>{
