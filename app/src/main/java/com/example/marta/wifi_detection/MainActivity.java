@@ -33,8 +33,12 @@ import org.json.JSONObject;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.sql.SQLOutput;
@@ -52,8 +56,11 @@ public class MainActivity extends Activity {
     WifiScanReceiver wifiScanReceiver;
     Button scan;
 
+    int fileCounter;
+
     public static final int NUMBER_OF_SCANS = 3;
     public static final int SCANNING_TIME = 3000;
+    public static final String FILE_COUNTER_EXTENSION="fileCounter.bin";
 
     ArrayList<JSONObject> dataCollection;
 
@@ -123,7 +130,56 @@ public class MainActivity extends Activity {
             }
         });
 
+        fileCounter = readFileCouterFromFile();
 
+    }
+
+    private int readFileCouterFromFile(){
+      int f=0;
+      File fileDir=getApplication().getFilesDir();
+      String counterFile=null;
+
+        for(String file: fileDir.list())
+        {
+            if(file.endsWith(FILE_COUNTER_EXTENSION)){
+                counterFile=file;
+            }
+        }
+
+        FileInputStream fis;
+        ObjectInputStream ois;
+
+        try{
+            fis=getApplicationContext().openFileInput(counterFile);
+            ois= new ObjectInputStream(fis);
+            f=(int) ois.readObject();
+            fis.close();
+            ois.close();
+        }
+        catch(IOException | ClassNotFoundException e){
+            e.printStackTrace();
+        }
+      return f;
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        String fileName= FILE_COUNTER_EXTENSION;
+        FileOutputStream fos;
+        ObjectOutputStream oos;
+        try
+        {
+            fos = getApplication().openFileOutput(fileName, getApplication().MODE_PRIVATE);
+            oos = new ObjectOutputStream(fos);
+            oos.writeObject(fileCounter);
+            oos.close();
+            fos.close();
+        }
+        catch(IOException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     private void saveToJSONFile(){
@@ -131,7 +187,7 @@ public class MainActivity extends Activity {
         JSONObject jsonObject=jsonWiFiData.makeJSONObject();
 
 
-        try (FileWriter file = new FileWriter("/storage/emulated/0/JSON/plik.json")) {
+        try (FileWriter file = new FileWriter("/storage/emulated/0/JSON/plikJSON"+fileCounter+".json")) {
             file.write(jsonObject.toString());
             file.flush();
 
@@ -140,7 +196,7 @@ public class MainActivity extends Activity {
             e.printStackTrace();
         }
 
-        try (FileWriter file = new FileWriter("/storage/emulated/0/JSON/plik2.txt")) {
+        try (FileWriter file = new FileWriter("/storage/emulated/0/JSON/plikTxt"+fileCounter+".txt")) {
             file.write(jsonObject.toString());
             file.flush();
 
@@ -153,7 +209,6 @@ public class MainActivity extends Activity {
 
     private void returnAllWifis(){
         content.clear();
-        System.out.println("RETURN ALL WIFIS");
         List<ScanResult> scanResults = wifiManager.getScanResults();
 
         for(ScanResult s: scanResults){
