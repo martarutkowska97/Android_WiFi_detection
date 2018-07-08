@@ -39,12 +39,10 @@ public class JSONWiFiData extends JSONObject{
                 measurement.put(SIGNAL_TAG, w.getSignalStrength());
                 array.put(measurement);
             }
-
             obj.put(MEASUREMENTS_TAG, array);
         } catch (JSONException e) {
             e.printStackTrace();
         }
-
         return obj;
     }
 
