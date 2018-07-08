@@ -48,21 +48,17 @@ import java.util.List;
 
 public class MainActivity extends Activity {
 
-    RecyclerView recyclerView;
-    static ArrayList<WiFiElement> content;
-    RVAdapter adapter;
-
-    WifiManager wifiManager;
-    WifiScanReceiver wifiScanReceiver;
-    Button scan;
-
-    int fileCounter;
-
     public static final int NUMBER_OF_SCANS = 3;
-    public static final int SCANNING_TIME = 3000;
     public static final String FILE_COUNTER_EXTENSION="fileCounter.bin";
 
-    ArrayList<JSONObject> dataCollection;
+    private static ArrayList<WiFiElement> content;
+    private RVAdapter adapter;
+
+    private WifiManager wifiManager;
+    private WifiScanReceiver wifiScanReceiver;
+
+    private int fileCounter;
+    private ArrayList<JSONObject> dataCollection;
 
 
 
@@ -71,31 +67,42 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        if(!(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) &&
-                ContextCompat.checkSelfPermission(this, Manifest.permission.CHANGE_WIFI_STATE) == PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_WIFI_STATE) == PackageManager.PERMISSION_GRANTED &&
-        ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
-        ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
-        {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                    Manifest.permission.ACCESS_WIFI_STATE, Manifest.permission.CHANGE_WIFI_STATE, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
-                    0);
-        }
+        checkAllPermssions();
 
 
-        recyclerView = findViewById(R.id.recycler_view);
+        RecyclerView recyclerView = findViewById(R.id.recycler_view);
         content=new ArrayList<>();
         dataCollection=new ArrayList<>();
-
         adapter = new RVAdapter();
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
         wifiManager= (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         wifiScanReceiver = new WifiScanReceiver();
         registerReceiver(wifiScanReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
 
-        scan= findViewById(R.id.button_scan);
+        initializeScanButton();
+
+        fileCounter = readFileCounterFromFile();
+
+    }
+
+    private void checkAllPermssions(){
+        if(!(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.CHANGE_WIFI_STATE) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_WIFI_STATE) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
+        {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                            Manifest.permission.ACCESS_WIFI_STATE, Manifest.permission.CHANGE_WIFI_STATE, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
+                    0);
+        }
+    }
+
+    private void initializeScanButton(){
+        Button scan= findViewById(R.id.button_scan);
         scan.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -129,12 +136,9 @@ public class MainActivity extends Activity {
 
             }
         });
-
-        fileCounter = readFileCouterFromFile();
-
     }
 
-    private int readFileCouterFromFile(){
+    private int readFileCounterFromFile(){
       int f=0;
       File fileDir=getApplication().getFilesDir();
       String counterFile=null;
@@ -156,7 +160,7 @@ public class MainActivity extends Activity {
             fis.close();
             ois.close();
         }
-        catch(IOException | ClassNotFoundException e){
+        catch(Exception e){
             e.printStackTrace();
         }
       return f;
@@ -165,12 +169,11 @@ public class MainActivity extends Activity {
     @Override
     protected void onStop() {
         super.onStop();
-        String fileName= FILE_COUNTER_EXTENSION;
         FileOutputStream fos;
         ObjectOutputStream oos;
         try
         {
-            fos = getApplication().openFileOutput(fileName, getApplication().MODE_PRIVATE);
+            fos = getApplication().openFileOutput(FILE_COUNTER_EXTENSION, Context.MODE_PRIVATE);
             oos = new ObjectOutputStream(fos);
             oos.writeObject(fileCounter);
             oos.close();
@@ -187,7 +190,8 @@ public class MainActivity extends Activity {
         JSONObject jsonObject=jsonWiFiData.makeJSONObject();
 
 
-        try (FileWriter file = new FileWriter("/storage/emulated/0/JSON/plikJSON"+fileCounter+".json")) {
+        try (FileWriter file = new FileWriter(Environment.getExternalStorageDirectory()+"/plikJSON"+fileCounter+".json")) {
+            fileCounter++;
             file.write(jsonObject.toString());
             file.flush();
 
@@ -196,7 +200,8 @@ public class MainActivity extends Activity {
             e.printStackTrace();
         }
 
-        try (FileWriter file = new FileWriter("/storage/emulated/0/JSON/plikTxt"+fileCounter+".txt")) {
+        try (FileWriter file = new FileWriter(Environment.getExternalStorageDirectory()+"/plikTxt"+fileCounter+".txt")) {
+            fileCounter++;
             file.write(jsonObject.toString());
             file.flush();
 

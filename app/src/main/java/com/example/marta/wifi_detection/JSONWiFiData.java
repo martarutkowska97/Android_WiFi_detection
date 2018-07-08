@@ -1,15 +1,9 @@
 package com.example.marta.wifi_detection;
 
-import android.app.ProgressDialog;
-import android.os.AsyncTask;
-import android.view.ViewTreeObserver;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.util.ArrayList;
-import java.util.HashMap;
 
 
 public class JSONWiFiData extends JSONObject{
@@ -21,9 +15,9 @@ public class JSONWiFiData extends JSONObject{
     public static final String SIGNAL_TAG="signal";
 
 
-    int x_coord;
-    int y_coord;
-    ArrayList<WiFiElement> measurements;
+    private int x_coord;
+    private int y_coord;
+    private ArrayList<WiFiElement> measurements;
 
     public JSONWiFiData(int x_coord, int y_coord, ArrayList<WiFiElement> measurements) {
         this.x_coord = x_coord;

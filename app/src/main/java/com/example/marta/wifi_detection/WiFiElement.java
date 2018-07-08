@@ -1,8 +1,8 @@
 package com.example.marta.wifi_detection;
 
 public class WiFiElement {
-    String addressMAC;
-    String signalStrength;
+    private String addressMAC;
+    private String signalStrength;
 
     public WiFiElement(String addressMAC, String signalStrength){
         this.addressMAC=addressMAC;
