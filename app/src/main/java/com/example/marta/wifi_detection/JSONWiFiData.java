@@ -15,11 +15,11 @@ public class JSONWiFiData extends JSONObject{
     public static final String SIGNAL_TAG="signal";
 
 
-    private int x_coord;
-    private int y_coord;
+    private float x_coord;
+    private float y_coord;
     private ArrayList<WiFiElement> measurements;
 
-    public JSONWiFiData(int x_coord, int y_coord, ArrayList<WiFiElement> measurements) {
+    public JSONWiFiData(float x_coord, float y_coord, ArrayList<WiFiElement> measurements) {
         this.x_coord = x_coord;
         this.y_coord = y_coord;
         this.measurements = measurements;

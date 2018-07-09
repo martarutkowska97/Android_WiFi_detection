@@ -59,6 +59,7 @@ public class MainActivity extends Activity {
 
     private int fileCounter;
     private ArrayList<JSONObject> dataCollection;
+    private DisplacementCollector displacementCollector;
 
 
 
@@ -84,6 +85,7 @@ public class MainActivity extends Activity {
         initializeScanButton();
 
         fileCounter = readFileCounterFromFile();
+        displacementCollector=new DisplacementCollector(getApplicationContext());
 
     }
 
@@ -185,13 +187,12 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void saveToJSONFile(){
-        JSONWiFiData jsonWiFiData=new JSONWiFiData(-1,-1,content);
+    private void saveToJSONFile(JSONWiFiData jsonWiFiData){
+        //JSONWiFiData jsonWiFiData=new JSONWiFiData(displacementCollector.getDisplacement()[0],displacementCollector.getDisplacement()[1],content);
         JSONObject jsonObject=jsonWiFiData.makeJSONObject();
 
 
         try (FileWriter file = new FileWriter(Environment.getExternalStorageDirectory()+"/plikJSON"+fileCounter+".json")) {
-            fileCounter++;
             file.write(jsonObject.toString());
             file.flush();
 
@@ -217,8 +218,7 @@ public class MainActivity extends Activity {
         List<ScanResult> scanResults = wifiManager.getScanResults();
 
         for(ScanResult s: scanResults){
-            content.add(new WiFiElement(Integer.toString(s.level), s.BSSID));
-            System.out.println(s.BSSID);
+            content.add(new WiFiElement(s.BSSID, Integer.toString(s.level)));
         }
         adapter.notifyDataSetChanged();
     }
@@ -241,10 +241,11 @@ public class MainActivity extends Activity {
         public void onReceive(Context c, Intent intent) {
             if (intent.getAction().equals(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)) {
                 returnAllWifis();
-                JSONWiFiData jsonWiFiData=new JSONWiFiData(-1,-1,content);
+                float[] disp = displacementCollector.getDisplacement();
+                JSONWiFiData jsonWiFiData=new JSONWiFiData(disp[0],disp[1],content);
                 JSONObject jsonObject=jsonWiFiData.makeJSONObject();
                 dataCollection.add(jsonObject);
-                saveToJSONFile();
+                saveToJSONFile(jsonWiFiData);
                 synchronized (MainActivity.this) {
                     MainActivity.this.notifyAll();
                 }
