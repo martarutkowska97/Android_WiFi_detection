@@ -331,19 +331,19 @@ public class MainActivity extends Activity {
     class RVAdapter extends RecyclerView.Adapter<MainActivity.ViewHolder>{
 
         /**
-         *
+         *Instantiates a layout XML file into its corresponding View objects.
          */
         LayoutInflater mLayoutInflater;
 
         /**
-         *
+         *Constructor for the adapter, specified to our RecyclerView
          */
         public RVAdapter(){
             mLayoutInflater=getLayoutInflater();
         }
 
         /**
-         *
+         * Called when RecyclerView needs a new RecyclerView.ViewHolder of the given type to represent an item.
          * @param parent
          * @param viewType
          * @return
@@ -356,9 +356,10 @@ public class MainActivity extends Activity {
         }
 
         /**
-         *
-         * @param holder
-         * @param position
+         * Called by RecyclerView to display the data at the specified position.
+         * This method should update the contents of the itemView to reflect the item at the given position.
+         * @param holder View holder of specific element
+         * @param position Position in the ArrayList of content
          */
         @Override
         public void onBindViewHolder(MainActivity.ViewHolder holder, int position) {
@@ -367,8 +368,7 @@ public class MainActivity extends Activity {
         }
 
         /**
-         *
-         * @return
+         * @return Returns the total number of items in the data set held by the adapter.
          */
         @Override
         public int getItemCount() {
