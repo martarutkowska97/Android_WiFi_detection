@@ -386,11 +386,11 @@ public class MainActivity extends Activity {
     public class ViewHolder extends RecyclerView.ViewHolder{
 
         /**
-         * TextView holding an information
+         * TextView holding an information about the MAC address of a specific router in a text
          */
         TextView addressMAC;
         /**
-         * TextView holding an information about the signal strength of specific router in text
+         * TextView holding an information about the signal strength of specific router in a text
          */
         TextView signalStrength;
 
