@@ -6,32 +6,24 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Environment;
-import android.support.constraint.solver.widgets.WidgetContainer;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.view.WindowCallbackWrapper;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
-
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -39,21 +31,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.sql.SQLOutput;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
- * The WiFi_detection program is used to collect data of all routers nearby
- * by detecting them, resolving their MAC address and signal strength
- * and link them to the coordinates, which are derived from the accelerometer.
- *
- * This application also saves collected data into JSON file in order to make
- * those data more useful and prepared for further calculations and processing.
- *
  * This class contains main content of the Activity and basic service
  *
  */
@@ -92,6 +73,7 @@ public class MainActivity extends Activity {
      * @param savedInstanceState Bundle: If the activity is being re-initialized after previously
      * being shut down then this Bundle contains the data it most recently supplied in
      */
+    private ArrayList<JSONObject> dataCollected;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -112,6 +94,8 @@ public class MainActivity extends Activity {
 
         fileCounter = readFileCounterFromFile();
         displacementCollector=new DisplacementCollector(getApplicationContext());
+
+        dataCollected=new ArrayList<>();
     }
 
     /**
@@ -216,6 +200,32 @@ public class MainActivity extends Activity {
     @Override
     protected void onStop() {
         super.onStop();
+
+
+        JSONArray arr= new JSONArray();
+        for(int i=0; i<dataCollected.size();i++){
+            arr.put(dataCollected.get(i));
+        }
+
+        try (FileWriter file = new FileWriter(Environment.getExternalStorageDirectory()+"/plikJSON"+fileCounter+".json")) {
+            file.write(arr.toString());
+            file.flush();
+
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try (FileWriter file = new FileWriter(Environment.getExternalStorageDirectory()+"/plikTxt"+fileCounter+".txt")) {
+            fileCounter++;
+            file.write(arr.toString());
+            file.flush();
+
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+
         FileOutputStream fos;
         ObjectOutputStream oos;
         try
@@ -314,8 +324,12 @@ public class MainActivity extends Activity {
             if (intent.getAction().equals(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)) {
                 returnAllWifis();
                 float[] disp = displacementCollector.getDisplacement();
-                JSONWiFiData jsonWiFiData=new JSONWiFiData(disp[0],disp[1],content);
-                saveToJSONFile(jsonWiFiData);
+                //JSONWiFiData jsonWiFiData=new JSONWiFiData(disp[0],disp[1],content);
+
+                //TODO: TU TEST
+                JSONWiFiData jsonWiFiData=new JSONWiFiData(disp[0],disp[1],new ArrayList<WiFiElement>());
+                dataCollected.add(jsonWiFiData.makeJSONObject());
+                //saveToJSONFile(jsonWiFiData);
                 synchronized (MainActivity.this) {
                     MainActivity.this.notifyAll();
                 }
