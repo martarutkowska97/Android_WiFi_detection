@@ -39,6 +39,8 @@ public class WiFiPlugin {
     private static WifiScanReceiver wifiScanReceiver;
     private static int fileCounter;
     private static ArrayList<JSONObject> dataCollected;
+    private static ArrayList<WiFiElement> lastScan;
+    private static ArrayList<WiFiElement> currentScan;
     static final Context context=UnityPlayer.currentActivity;
 
 
@@ -53,8 +55,11 @@ public class WiFiPlugin {
         }
 
         wifiScanReceiver = WifiScanReceiver.getInstance();
-        registerListener();
 
+        //TODO: CZY TU REJSETROWAĆ TEN LISTENER??????
+        registerListener();
+        lastScan=new ArrayList<>();
+        currentScan = new ArrayList<>();
         fileCounter = readFileCounterFromFile();
         dataCollected=new ArrayList<>();
         checkAllPermissions();
@@ -90,32 +95,10 @@ public class WiFiPlugin {
     public static void takeMeasurement(final float x_coord, final float y_coord){
 
         Log.e("takeMeasurement","!!!!!!!!ROBIE POMIAR");
-
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                int count = 0;
-                while (count < NUMBER_OF_SCANS) {
-                    try {
-                        wifiManager.startScan();
-                        synchronized (context) {
-                            Log.e("synchronized scan","!!!!1  WATEK SCAN THREAD");
-
-                            JSONWiFiData jsonWiFiData=new JSONWiFiData(x_coord,y_coord,returnAllWiFis());
-                            dataCollected.add(jsonWiFiData.makeJSONObject());
-                            context.wait();
-                            count++;
-                        }
-
-                        if(count < NUMBER_OF_SCANS)
-                            Thread.sleep(2000);
-                    } catch (InterruptedException e) {
-                    }
-
-                }
-            }
-        }).start();
-
+        wifiManager.startScan();
+        lastScan = returnAllWiFis();
+        JSONWiFiData jsonWiFiData = new JSONWiFiData(x_coord, y_coord, lastScan);
+        dataCollected.add(jsonWiFiData.makeJSONObject());
 
     }
 
@@ -132,7 +115,7 @@ public class WiFiPlugin {
 
         Log.e("finishAndSave","!!!!!1 KOŃCZĘ I ZAPISUJĘ");
 
-        unregisterListener();
+        //unregisterListener();
 
         JSONArray arr= new JSONArray();
         for(int i=0; i<dataCollected.size();i++){
@@ -205,17 +188,55 @@ public class WiFiPlugin {
         return f;
     }
 
+    private static boolean areArrayListsEqual(ArrayList<WiFiElement> arrayList1, ArrayList<WiFiElement> arrayList2){
+        if(arrayList1.size()!=arrayList2.size()){
+            return false;
+        }
+        else{
+            for(int i=0;i<arrayList1.size();i++){
+                if(arrayList1.get(i).getAddressMAC()!=arrayList2.get(i).getAddressMAC()||arrayList1.get(i).getSignalStrength()!=arrayList2.get(i).getSignalStrength()){
+                    return false;
+                }
+            }
+
+        }
+        return true;
+    }
+
+
     private static ArrayList<WiFiElement> returnAllWiFis(){
-        Log.e("return all wifis","!!!!!!111 ZWRACAM WSZYSTKIE WIFIIII");
+        Log.e("return all wifis","!!!!!!111 ZWRACAM WSZYSTKIE WIFI");
 
         ArrayList<WiFiElement> content = new ArrayList<>();
         List<ScanResult> scanResults = wifiManager.getScanResults();
+
+        Log.e("scan size","!!!!!!111 "+Integer.toString(scanResults.size()));
         for(ScanResult s: scanResults){
+            Log.e("result wifi1","!!!!!!111 "+s.BSSID+"strength"+Integer.toString(s.level));
             content.add(new WiFiElement(s.BSSID, Integer.toString(s.level)));
         }
         return content;
     }
 
+
+    public static boolean isWiFiScannerReady(){
+        Log.e("synchronized scan", "!!!!1  SPRAWDZAM STATUS");
+
+        if(areArrayListsEqual(lastScan, currentScan)){
+            Log.e("skaner: ","!!!!!!1 SKANER NIEGOTOWY");
+            return false;
+        }
+        else if(lastScan.isEmpty()){
+            Log.e("skaner: ","!!!!!!1 SKANER GOTOWY");
+            return true;
+        }
+        else if(currentScan.isEmpty()){
+            Log.e("skaner: ","!!!!!!1 SKANER GOTOWY");
+            return true;
+        }
+        Log.e("skaner: ","!!!!!!1 SKANER GOTOWY");
+        return true;
+    }
 
     static class WifiScanReceiver extends BroadcastReceiver {
 
@@ -233,13 +254,14 @@ public class WiFiPlugin {
         @Override
         public void onReceive(Context c, Intent intent) {
             if (intent.getAction().equals(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)) {
-                Log.e("onReceive","!!!11 ON RECEIVE");
 
-                notifyAll();
+                Log.e("onReceive","!!!11 ON RECEIVE");
+                currentScan = returnAllWiFis();
             }
         }
 
     }
+
 
 
 }
