@@ -21,8 +21,6 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.File;
 import java.io.FileInputStream;
@@ -35,6 +33,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * The WiFi_detection program is used to collect data of all routers nearby
+ * by detecting them, resolving their MAC address and signal strength
+ * and link them to the coordinates, which are derived from the accelerometer.
+ *
+ * This application also saves collected data into JSON file in order to make
+ * those data more useful and prepared for further calculations and processing.
+ *
  * This class contains main content of the Activity and basic service
  *
  */
@@ -73,7 +78,6 @@ public class MainActivity extends Activity {
      * @param savedInstanceState Bundle: If the activity is being re-initialized after previously
      * being shut down then this Bundle contains the data it most recently supplied in
      */
-    private ArrayList<JSONObject> dataCollected;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -94,8 +98,6 @@ public class MainActivity extends Activity {
 
         fileCounter = readFileCounterFromFile();
         displacementCollector=new DisplacementCollector(getApplicationContext());
-
-        dataCollected=new ArrayList<>();
     }
 
     /**
@@ -153,7 +155,6 @@ public class MainActivity extends Activity {
                         }
                     }
                 }).start();
-
             }
         });
     }
@@ -166,9 +167,9 @@ public class MainActivity extends Activity {
      * @return integer number responsible for identifying new file
      */
     private int readFileCounterFromFile(){
-      int f=0;
-      File fileDir=getApplication().getFilesDir();
-      String counterFile=null;
+        int f=0;
+        File fileDir=getApplication().getFilesDir();
+        String counterFile=null;
 
         for(String file: fileDir.list())
         {
@@ -190,7 +191,7 @@ public class MainActivity extends Activity {
         catch(Exception e){
             e.printStackTrace();
         }
-      return f;
+        return f;
     }
 
     /**
@@ -200,32 +201,6 @@ public class MainActivity extends Activity {
     @Override
     protected void onStop() {
         super.onStop();
-
-
-        JSONArray arr= new JSONArray();
-        for(int i=0; i<dataCollected.size();i++){
-            arr.put(dataCollected.get(i));
-        }
-
-        try (FileWriter file = new FileWriter(Environment.getExternalStorageDirectory()+"/plikJSON"+fileCounter+".json")) {
-            file.write(arr.toString());
-            file.flush();
-
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        try (FileWriter file = new FileWriter(Environment.getExternalStorageDirectory()+"/plikTxt"+fileCounter+".txt")) {
-            fileCounter++;
-            file.write(arr.toString());
-            file.flush();
-
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-
         FileOutputStream fos;
         ObjectOutputStream oos;
         try
@@ -324,12 +299,8 @@ public class MainActivity extends Activity {
             if (intent.getAction().equals(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)) {
                 returnAllWifis();
                 float[] disp = displacementCollector.getDisplacement();
-                //JSONWiFiData jsonWiFiData=new JSONWiFiData(disp[0],disp[1],content);
-
-                //TODO: TU TEST
-                JSONWiFiData jsonWiFiData=new JSONWiFiData(disp[0],disp[1],new ArrayList<WiFiElement>());
-                dataCollected.add(jsonWiFiData.makeJSONObject());
-                //saveToJSONFile(jsonWiFiData);
+                JSONWiFiData jsonWiFiData=new JSONWiFiData(disp[0],disp[1],content);
+                saveToJSONFile(jsonWiFiData);
                 synchronized (MainActivity.this) {
                     MainActivity.this.notifyAll();
                 }
