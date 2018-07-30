@@ -6,6 +6,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Environment;
@@ -64,6 +68,14 @@ public class WiFiPlugin {
     private static float current_x_coord = -1;
     private static float current_y_coord = -1;
 
+    private static float rotation_x = -1;
+    private static float rotation_y = -1;
+    private static float rotation_z = -1;
+
+
+    private static SensorManager sensorManager;
+    private static Sensor rotationVector;
+
     /**
      * This method initializes needed class fields.
      */
@@ -74,6 +86,25 @@ public class WiFiPlugin {
         fileCounter = readFileCounterFromFile();
         dataCollected = new ArrayList<>();
         checkAllPermissions();
+
+        sensorManager=(SensorManager)context.getSystemService(Context.SENSOR_SERVICE);
+        rotationVector=sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
+
+        SensorEventListener rotationVectorListener= new SensorEventListener() {
+            @Override
+            public void onSensorChanged(SensorEvent sensorEvent) {
+                rotation_x=sensorEvent.values[0];
+                rotation_y=sensorEvent.values[1];
+                rotation_z=sensorEvent.values[2];
+            }
+
+            @Override
+            public void onAccuracyChanged(Sensor sensor, int i) {
+
+            }
+        };
+
+        sensorManager.registerListener(rotationVectorListener, rotationVector, 100);
     }
 
 
@@ -113,6 +144,7 @@ public class WiFiPlugin {
         wifiManager.startScan();
         isScannerReady = false;
     }
+
 
 
     /**
@@ -257,7 +289,7 @@ public class WiFiPlugin {
         @Override
         public void onReceive(Context c, Intent intent) {
             if (intent.getAction().equals(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)) {
-                JSONWiFiData jsonWiFiData = new JSONWiFiData(current_x_coord, current_y_coord, returnAllWiFis());
+                JSONWiFiData jsonWiFiData = new JSONWiFiData(current_x_coord, current_y_coord, rotation_x, rotation_y, rotation_y, returnAllWiFis());
                 dataCollected.add(jsonWiFiData.makeJSONObject());
                 isScannerReady = true;
             }

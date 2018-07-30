@@ -19,6 +19,11 @@ public class JSONWiFiData extends JSONObject{
      */
     public static final String X_COORD_TAG="x_coord";
     public static final String Y_COORD_TAG="y_coord";
+
+    public static final String ROTATION_X="rotation_x";
+    public static final String ROTATION_Y="rotation_y";
+    public static final String ROTATION_Z="rotation_z";
+
     public static final String MEASUREMENTS_TAG="measurements";
     public static final String MAC_TAG="MAC";
     public static final String SIGNAL_TAG="signal";
@@ -26,6 +31,9 @@ public class JSONWiFiData extends JSONObject{
 
     private float x_coord;
     private float y_coord;
+    private float rotation_x = -1;
+    private float rotation_y = -1;
+    private float rotation_z = -1;
     /**
      * An ArrayList containing instances of WiFiElement class taken in the specific x,y point.
      */
@@ -37,9 +45,12 @@ public class JSONWiFiData extends JSONObject{
      * @param y_coord Float y coordinate of a place in which the measurement was taken.
      * @param measurements List of all WiFi signals scanned in this point.
      */
-    public JSONWiFiData(float x_coord, float y_coord, ArrayList<WiFiElement> measurements) {
+    public JSONWiFiData(float x_coord, float y_coord, float rotation_x, float rotation_y, float rotation_z, ArrayList<WiFiElement> measurements) {
         this.x_coord = x_coord;
         this.y_coord = y_coord;
+        this.rotation_x=rotation_x;
+        this.rotation_y=rotation_y;
+        this.rotation_z=rotation_z;
         this.measurements = measurements;
     }
 
@@ -53,6 +64,10 @@ public class JSONWiFiData extends JSONObject{
         try {
             obj.put(X_COORD_TAG, x_coord);
             obj.put(Y_COORD_TAG, y_coord);
+
+            obj.put(ROTATION_X, rotation_x);
+            obj.put(ROTATION_Y, rotation_y);
+            obj.put(ROTATION_Z, rotation_z);
 
             JSONArray array= new JSONArray();
             for(WiFiElement w: measurements){
