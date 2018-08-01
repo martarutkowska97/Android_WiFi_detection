@@ -17,6 +17,8 @@ public class JSONWiFiData extends JSONObject{
     /**
      * String tags for the values of an JSON object.
      */
+
+    public static final String NAME_TAG="device_name";
     public static final String X_COORD_TAG="x_coord";
     public static final String Y_COORD_TAG="y_coord";
 
@@ -62,6 +64,7 @@ public class JSONWiFiData extends JSONObject{
         JSONObject obj = new JSONObject();
 
         try {
+            obj.put(NAME_TAG, android.os.Build.MANUFACTURER + android.os.Build.MODEL);
             obj.put(X_COORD_TAG, x_coord);
             obj.put(Y_COORD_TAG, y_coord);
 

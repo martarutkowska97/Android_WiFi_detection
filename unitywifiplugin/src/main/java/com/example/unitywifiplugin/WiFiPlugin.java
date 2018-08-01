@@ -150,6 +150,11 @@ public class WiFiPlugin {
         isScannerReady = false;
     }
 
+    public static void removeLastMeasurement(){
+        if(dataCollected.size()!=0){
+            dataCollected.remove(dataCollected.size()-1);
+        }
+    }
 
 
     /**
@@ -176,10 +181,15 @@ public class WiFiPlugin {
             arr.put(dataCollected.get(i));
         }
 
+        File directory = new File(Environment.getExternalStorageDirectory()+"/JSON");
+        if (!directory.exists()) {
+            directory.mkdirs();
+        }
+
         SimpleDateFormat s = new SimpleDateFormat("ddMMyyyyhhmmss", Locale.GERMANY);
         String format = s.format(new Date());
 
-        try (FileWriter file = new FileWriter(Environment.getExternalStorageDirectory() + "/WiFi" + format + ".json")) {
+        try (FileWriter file = new FileWriter(directory.getAbsolutePath()+ "/WiFi" + format + ".json")) {
             file.write(arr.toString());
             file.flush();
             Toast.makeText(context, "ZAPISANO "+format, Toast.LENGTH_SHORT).show();
@@ -188,7 +198,7 @@ public class WiFiPlugin {
             e.printStackTrace();
         }
 
-//        try (FileWriter file = new FileWriter(Environment.getExternalStorageDirectory() + "/plikTxt" + fileCounter + ".txt")) {
+//        try (FileWriter file = new FileWriter(directory.getAbsolutePath()+ "/plikTxt" + format + ".txt")) {
 //            fileCounter++;
 //            file.write(arr.toString());
 //            file.flush();
