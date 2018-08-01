@@ -15,6 +15,8 @@ import android.net.wifi.WifiManager;
 import android.os.Environment;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.widget.Toast;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.File;
@@ -24,8 +26,11 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import com.unity3d.player.UnityPlayer;
 
@@ -171,22 +176,26 @@ public class WiFiPlugin {
             arr.put(dataCollected.get(i));
         }
 
-        try (FileWriter file = new FileWriter(Environment.getExternalStorageDirectory() + "/plikJSON" + fileCounter + ".json")) {
+        SimpleDateFormat s = new SimpleDateFormat("ddMMyyyyhhmmss", Locale.GERMANY);
+        String format = s.format(new Date());
+
+        try (FileWriter file = new FileWriter(Environment.getExternalStorageDirectory() + "/WiFi" + format + ".json")) {
             file.write(arr.toString());
             file.flush();
+            Toast.makeText(context, "ZAPISANO "+format, Toast.LENGTH_SHORT).show();
 
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        try (FileWriter file = new FileWriter(Environment.getExternalStorageDirectory() + "/plikTxt" + fileCounter + ".txt")) {
-            fileCounter++;
-            file.write(arr.toString());
-            file.flush();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        try (FileWriter file = new FileWriter(Environment.getExternalStorageDirectory() + "/plikTxt" + fileCounter + ".txt")) {
+//            fileCounter++;
+//            file.write(arr.toString());
+//            file.flush();
+//
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
         FileOutputStream fos;
         ObjectOutputStream oos;
@@ -199,6 +208,7 @@ public class WiFiPlugin {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        dataCollected.clear();
     }
 
     /**
@@ -289,7 +299,7 @@ public class WiFiPlugin {
         @Override
         public void onReceive(Context c, Intent intent) {
             if (intent.getAction().equals(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)) {
-                JSONWiFiData jsonWiFiData = new JSONWiFiData(current_x_coord, current_y_coord, rotation_x, rotation_y, rotation_y, returnAllWiFis());
+                JSONWiFiData jsonWiFiData = new JSONWiFiData(current_x_coord, current_y_coord, rotation_x, rotation_y, rotation_z, returnAllWiFis());
                 dataCollected.add(jsonWiFiData.makeJSONObject());
                 isScannerReady = true;
             }
